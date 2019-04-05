@@ -166,14 +166,14 @@ class AI(object):
             sorted_e = e[dp[:, None], arg_sorted_qs]
             for a_bot in range(self.nb_actions):
                 mass_bot = torch.min(pi_b[:, a_bot], allowed_error / (2 * sorted_e[:, a_bot]))
-                #  A_top is sorted in decreasing order cost per improvement:
-                _, A_top = torch.sort((_q2_net - sorted_qs[:, a_bot][:, None]) / e, dim=1, descending=True)
-                for a_top in range(self.nb_actions-1-a_bot):
-                    mass_top = torch.min(mass_bot, allowed_error / (2 * e[dp, A_top[:,a_top]]))
-                    mass_bot -= mass_top
-                    _pi_b[dp, arg_sorted_qs[:,a_bot]] -= mass_top
-                    _pi_b[dp, A_top[:,a_top]] += mass_top
-                    allowed_error -= mass_top * (sorted_e[:, a_bot] + e[dp, A_top[:,a_top]])
+                _, A_top = torch.max(
+                    (_q2_net - sorted_qs[:, a_bot][:, None]) / e, dim=1)
+                mass_top = torch.min(
+                    mass_bot, allowed_error / (2 * e[dp, A_top]))
+                mass_bot -= mass_top
+                _pi_b[dp, arg_sorted_qs[:, a_bot]] -= mass_top
+                _pi_b[dp, A_top] += mass_top
+                allowed_error -= mass_top * (sorted_e[:, a_bot] + e[dp, A_top])
             return r + (1 - t) * self.gamma * torch.sum(q2 * _pi_b, 1)
 
         if self.learning_type == 'ramdp':
@@ -224,13 +224,12 @@ class AI(object):
             sorted_e = e[A_bot]
             for a_bot in range(self.nb_actions):
                 mass_bot = min(policy[a_bot], allowed_error / (2 * sorted_e[a_bot]))
-                A_top = np.argsort(-(q_values - q_values[A_bot[a_bot]]) / e)
-                for a_top in range(self.nb_actions-1-a_bot):
-                    mass_top = min(mass_bot, allowed_error / (2 * e[A_top[a_top]]))
-                    mass_bot -= mass_top
-                    pi_b[A_bot[a_bot]] -= mass_top
-                    pi_b[A_top[a_top]] += mass_top
-                    allowed_error -= mass_top * (sorted_e[a_bot] + e[A_top[a_top]])
+                A_top = np.argmax((q_values - q_values[A_bot[a_bot]]) / e)
+                mass_top = min(mass_bot, allowed_error / (2 * e[A_top]))
+                mass_bot -= mass_top
+                pi_b[A_bot[a_bot]] -= mass_top
+                pi_b[A_top] += mass_top
+                allowed_error -= mass_top * (sorted_e[a_bot] + e[A_top])
             pi_b[pi_b < 0] = 0
             pi_b /= np.sum(pi_b)
             return np.random.choice(self.nb_actions, size=1, replace=True, p=pi_b)

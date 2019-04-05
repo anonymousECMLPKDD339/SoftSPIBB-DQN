@@ -43,14 +43,14 @@ noise_factor: 1
 normalize: 1.0
 num_epochs: 1
 num_experiments: 15
-passes_on_dataset: 1000
+passes_on_dataset: 500
 replay_max_size: 1000000
 replay_min_size: 1
 reward_dim: 1
 seed: 123
 state_shape: [4]
 steps_per_epoch: 10000
-steps_per_test: 10000
+steps_per_test: 1000
 test: false
 test_epsilon: 0.0
 update_freq: 10
